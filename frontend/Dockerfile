@@ -10,8 +10,7 @@ RUN npm run build
 
 FROM nginx:1.29-alpine
 
-RUN apk add --no-cache libcap \
- && setcap 'cap_net_bind_service=+ep' /usr/sbin/nginx
+RUN apk add --no-cache wget
 
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 

@@ -1,0 +1,105 @@
+version: '3.8'
+
+services:
+  # =================== DEV ===================
+  backend-dev:
+    profiles: [dev]
+    build: ./backend
+    image: backend:dev
+    container_name: backend-dev
+    ports: # пришлось явно указать localhost, тк почему-то порт не байндился наружу
+      - "127.0.0.1:8081:8081"                    # DEV: API на http://localhost:8081
+    restart: unless-stopped
+    networks:
+      app-net:
+        aliases: ["backend"]           # <— чтобы nginx во фронте видел хост 'backend'
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://localhost:8081/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+  frontend-dev:
+    profiles: [dev]
+    build: ./frontend
+    image: frontend:dev
+    container_name: frontend-dev
+    depends_on:
+      - backend-dev
+    ports:
+      - "3000:80"                      # DEV: UI на http://localhost:3000 (8080 у тебя занят)
+    restart: unless-stopped
+    networks: [web-net, app-net]
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://localhost/"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+  # =================== PROD ===================
+  backend:
+    profiles: [prod]
+    build: ./backend
+    image: backend:prod
+    container_name: backend-prod
+    restart: unless-stopped
+    networks: [app-net]
+    expose:
+      - "8081"                         # слушает 8081, но наружу не публикуем
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://localhost:8081/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    # security hardening
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    mem_limit: "256m"
+    cpus: "0.50"
+
+  frontend:
+    profiles: [prod]
+    build: ./frontend
+    image: frontend:prod
+    container_name: frontend-prod
+    depends_on:
+      - backend
+    ports:
+      - "3000:80"                   # наружу только UI
+    restart: unless-stopped
+    networks: [web-net, app-net]
+    # HTTP-проверка
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://localhost/"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+    user: "1000:1000"
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE 
+    read_only: true
+    tmpfs:
+      - /var/cache/nginx:rw,noexec,nosuid,nodev,size=64m,uid=1000,gid=1000
+      - /var/run:rw,noexec,nosuid,nodev,size=16m,uid=1000,gid=1000
+      - /var/log/nginx:rw,noexec,nosuid,nodev,size=16m,uid=1000,gid=1000
+    mem_limit: "128m"
+    cpus: "0.25"
+
+networks:
+  web-net:
+    driver: bridge
+  app-net:
+    driver: bridge
+    internal: true
