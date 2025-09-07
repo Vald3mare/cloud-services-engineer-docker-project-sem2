@@ -7,12 +7,12 @@ services:
     build: ./backend
     image: backend:dev
     container_name: backend-dev
-    ports: # пришлось явно указать localhost, тк почему-то порт не байндился наружу
-      - "127.0.0.1:8081:8081"                    # DEV: API на http://localhost:8081
+    ports:
+      - "8081:8081"
     restart: unless-stopped
     networks:
       app-net:
-        aliases: ["backend"]           # <— чтобы nginx во фронте видел хост 'backend'
+        aliases: ["backend"]
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "-", "http://localhost:8081/health"]
       interval: 10s
@@ -28,7 +28,7 @@ services:
     depends_on:
       - backend-dev
     ports:
-      - "3000:80"                      # DEV: UI на http://localhost:3000 (8080 у тебя занят)
+      - "3000:80"
     restart: unless-stopped
     networks: [web-net, app-net]
     healthcheck:
@@ -47,14 +47,13 @@ services:
     restart: unless-stopped
     networks: [app-net]
     expose:
-      - "8081"                         # слушает 8081, но наружу не публикуем
+      - "8081"
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "-", "http://localhost:8081/health"]
       interval: 10s
       timeout: 3s
       retries: 5
       start_period: 10s
-    # security hardening
     security_opt:
       - no-new-privileges:true
     cap_drop: [ALL]
@@ -72,10 +71,9 @@ services:
     depends_on:
       - backend
     ports:
-      - "3000:80"                   # наружу только UI
+      - "3000:80"
     restart: unless-stopped
     networks: [web-net, app-net]
-    # HTTP-проверка
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "-", "http://localhost/"]
       interval: 10s
