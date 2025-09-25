@@ -2,43 +2,77 @@ name: Docker Project Deploy
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main, dev ]
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: "Что запускать через compose?"
+        type: choice
+        required: true
+        default: prod
+        options: [ prod, dev ]
 
 jobs:
   build_and_push_to_docker_hub:
-      name: Push Docker image to DockerHub
-      runs-on: ubuntu-latest
-      steps:
-        - name: Check out the repo
-          uses: actions/checkout@v3
-        - name: Set up Docker Buildx
-          uses: docker/setup-buildx-action@v2
-        - name: Login to Docker 
-          uses: docker/login-action@v2
-          with:
-            username: ${{ secrets.DOCKER_USER }}
-            password: ${{ secrets.DOCKER_PASSWORD }}
-        - name: Push Backend to DockerHub
-          uses: docker/build-push-action@v4
-          with:
-            context: ./backend/
-            push: true
-            tags: ${{ secrets.DOCKER_USER }}/docker-project-backend:latest
-        - name: Push Frontend to DockerHub
-          uses: docker/build-push-action@v4
-          with:
-            context: ./frontend/
-            push: true
-            tags: ${{ secrets.DOCKER_USER }}/docker-project-frontend:latest
-
-  run-with-docker-compose:
-    name: Push Docker image to DockerHub
+    name: Build & Push images
     runs-on: ubuntu-latest
     steps:
-      - name: Check out the repo
-        uses: actions/checkout@v3
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-      - name: Build via Docker Compose
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build & Push Backend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend/
+          push: true
+          tags: ${{ secrets.DOCKER_USER }}/docker-project-backend:latest
+
+      - name: Build & Push Frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend/
+          push: true
+          tags: ${{ secrets.DOCKER_USER }}/docker-project-frontend:latest
+
+  compose:
+    name: Compose up (${{ matrix.profile }})
+    runs-on: ubuntu-latest
+    needs: build_and_push_to_docker_hub
+
+    strategy:
+      matrix:
+        include:
+          - profile: prod
+            branch: main
+          - profile: dev
+            branch: dev
+
+    if: |
+      (github.event_name == 'push' && github.ref_name == matrix.branch) ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.profile == matrix.profile)
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Show compose profiles (debug)
+        run: docker compose -f ./docker-compose.yml config --profiles || true
+
+      - name: Compose up --profile ${{ matrix.profile }}
         uses: hoverkraft-tech/compose-action@v2.2.0
+        with:
+          compose-file: ./docker-compose.yml
+          compose-flags: --profile ${{ matrix.profile }}
+          up-flags: -d --wait
