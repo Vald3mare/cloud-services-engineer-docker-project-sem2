@@ -6,7 +6,6 @@ services:
     profiles: [dev]
     build: ./backend
     image: backend:dev
-    container_name: backend-dev
     ports:
       - "8081:8081"
     restart: unless-stopped
@@ -24,7 +23,6 @@ services:
     profiles: [dev]
     build: ./frontend
     image: frontend:dev
-    container_name: frontend-dev
     depends_on:
       - backend-dev
     ports:
@@ -43,9 +41,10 @@ services:
     profiles: [prod]
     build: ./backend
     image: backend:prod
-    container_name: backend-prod
     restart: unless-stopped
-    networks: [app-net]
+    networks: 
+      app-net:
+        aliases: ["backend"]
     expose:
       - "8081"
     healthcheck:
@@ -67,7 +66,6 @@ services:
     profiles: [prod]
     build: ./frontend
     image: frontend:prod
-    container_name: frontend-prod
     depends_on:
       - backend
     ports:
