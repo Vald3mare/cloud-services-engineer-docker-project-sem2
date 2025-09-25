@@ -15,7 +15,7 @@ on:
 jobs:
   build_and_push_to_docker_hub:
     name: Build & Push images
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - name: Check out
         uses: actions/checkout@v4
@@ -45,7 +45,7 @@ jobs:
 
   compose-prod:
     name: Compose up (prod)
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: build_and_push_to_docker_hub
     if: ${{ github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && github.event.inputs.profile == 'prod') }}
     steps:
@@ -64,7 +64,7 @@ jobs:
 
   compose-dev:
     name: Compose up (dev)
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: build_and_push_to_docker_hub
     if: ${{ github.ref == 'refs/heads/dev' || (github.event_name == 'workflow_dispatch' && github.event.inputs.profile == 'dev') }}
     steps:
