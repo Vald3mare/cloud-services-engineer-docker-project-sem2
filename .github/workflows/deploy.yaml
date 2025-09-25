@@ -56,9 +56,8 @@ jobs:
           - profile: dev
             branch: dev
 
-    if: |
-      (github.event_name == 'push' && github.ref_name == matrix.branch) ||
-      (github.event_name == 'workflow_dispatch' && github.event.inputs.profile == matrix.profile)
+    if: ${{ (github.event_name == 'push' && github.ref_name == matrix.branch) ||
+            (github.event_name == 'workflow_dispatch' && github.event.inputs.profile == matrix.profile) }}
 
     steps:
       - name: Check out
