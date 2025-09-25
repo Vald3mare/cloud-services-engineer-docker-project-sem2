@@ -1,0 +1,16 @@
+vendor/
+.idea/
+.vscode/
+.DS_Store
+*.tgz
+
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+**/*.log
+**/*_test.go
+.git
+.gitignore
