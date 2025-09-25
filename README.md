@@ -14,10 +14,10 @@
 
 ## Доступ к сервисам
 
-- **Frontend (UI)** доступен на порту **3000** (`http://localhost:3000`) *Внутри контейнера слушает порт 80, снаружи вынес на 3000 порт*
+- **Frontend (UI)** доступен на порту **3000** (`http://localhost:80`)
 - **Backend (API)**:
   - в **dev** окружении — на порту **8081** (`http://localhost:8081`)
-  - в **prod** окружении — скрыт во внутренней сети, доступен только через frontend по адресу `http://localhost:3000/api`
+  - в **prod** окружении — скрыт во внутренней сети, доступен только через frontend по адресу `http://localhost:80/api`
 
 ---
 
@@ -46,7 +46,7 @@ docker compose --profile prod down -v
 ## Проверка работы приложения
 ```
 # UI снаружи
-curl -I http://localhost:3000/
+curl -I http://localhost:80/
 
 # API доступен только изнутри сети
 docker exec -it frontend-prod wget -qO- http://backend:8081/health
