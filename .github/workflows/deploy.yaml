@@ -56,11 +56,11 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Compose up --profile prod
-        uses: hoverkraft-tech/compose-action@v2.2.0
-        with:
-          compose-file: ./docker-compose.yml
-          compose-flags: --profile prod
-          up-flags: -d --wait
+        run: |
+          docker compose -f ./docker-compose.yml --profile prod pull || true
+          docker compose -f ./docker-compose.yml --profile prod up -d --wait
+          docker compose -f ./docker-compose.yml --profile prod ps
+          docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'
 
   compose-dev:
     name: Compose up (dev)
@@ -75,8 +75,8 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Compose up --profile dev
-        uses: hoverkraft-tech/compose-action@v2.2.0
-        with:
-          compose-file: ./docker-compose.yml
-          compose-flags: --profile dev
-          up-flags: -d --wait
+        run: |
+          docker compose -f ./docker-compose.yml --profile dev pull || true
+          docker compose -f ./docker-compose.yml --profile dev up -d --wait
+          docker compose -f ./docker-compose.yml --profile dev ps
+          docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'
