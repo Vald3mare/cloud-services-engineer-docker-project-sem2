@@ -43,22 +43,11 @@ jobs:
           push: true
           tags: ${{ secrets.DOCKER_USER }}/docker-project-frontend:latest
 
-  compose:
-    name: Compose up (${{ matrix.profile }})
+  compose-prod:
+    name: Compose up (prod)
     runs-on: ubuntu-latest
     needs: build_and_push_to_docker_hub
-
-    strategy:
-      matrix:
-        include:
-          - profile: prod
-            branch: main
-          - profile: dev
-            branch: dev
-
-    if: ${{ (github.event_name == 'push' && github.ref_name == matrix.branch) ||
-            (github.event_name == 'workflow_dispatch' && github.event.inputs.profile == matrix.profile) }}
-
+    if: ${{ github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && github.event.inputs.profile == 'prod') }}
     steps:
       - name: Check out
         uses: actions/checkout@v4
@@ -66,12 +55,28 @@ jobs:
       - name: Set up Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Show compose profiles (debug)
-        run: docker compose -f ./docker-compose.yml config --profiles || true
-
-      - name: Compose up --profile ${{ matrix.profile }}
+      - name: Compose up --profile prod
         uses: hoverkraft-tech/compose-action@v2.2.0
         with:
           compose-file: ./docker-compose.yml
-          compose-flags: --profile ${{ matrix.profile }}
+          compose-flags: --profile prod
+          up-flags: -d --wait
+
+  compose-dev:
+    name: Compose up (dev)
+    runs-on: ubuntu-latest
+    needs: build_and_push_to_docker_hub
+    if: ${{ github.ref == 'refs/heads/dev' || (github.event_name == 'workflow_dispatch' && github.event.inputs.profile == 'dev') }}
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Compose up --profile dev
+        uses: hoverkraft-tech/compose-action@v2.2.0
+        with:
+          compose-file: ./docker-compose.yml
+          compose-flags: --profile dev
           up-flags: -d --wait
